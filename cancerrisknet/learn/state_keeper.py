@@ -89,7 +89,7 @@ class StateKeeper:
             with open(param_path, 'rb') as param_file:
                 param_dict = pickle.load(param_file)
         except Exception as e:
-            print(e.message)
+            print(str(e))
 
         # Load epoch_stats dict.
         stats_path = os.path.join(self.args.model_dir, STATS_PATH.format(self.args.model_name, identifier))
@@ -97,7 +97,7 @@ class StateKeeper:
             with open(stats_path, 'rb') as stats_file:
                 epoch_stats = pickle.load(stats_file)
         except Exception as e:
-            print(e.message)
+            print(str(e))
 
         # Load model and corresponding optimizers.
         models = {}

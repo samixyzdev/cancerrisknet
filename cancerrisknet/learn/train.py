@@ -162,7 +162,29 @@ def run_epoch(data_loader, train, truncate_epoch, models, optimizers, args):
             batch_days_to_censor, batch_dates = step_results
         batch_loss += loss.cpu().data.item()
         logger.log("model step")
+        # Add this code in the run_epoch function, right after the model_step call
+        # and before the optimizer step (around line 168-170 in your code)
 
+        step_results = model_step(batch, models, train, args)
+
+        loss, batch_preds, batch_probs, batch_golds, batch_patient_golds, batch_exams, batch_pids, batch_censors, \
+        batch_days_to_censor, batch_dates = step_results
+
+        # ADD THIS NaN DETECTION CODE HERE:
+        if torch.isnan(loss):
+            print(f"[DEBUG] NaN loss detected at epoch {epoch}, batch {i}, skipping update.")
+        # Clear any gradients that might have been computed
+        if train and optimizers is not None:
+            optimizers[args.model_name].zero_grad()
+            continue
+
+        batch_loss += loss.cpu().data.item()
+        logger.log("model step")
+
+        if train:
+        # The loss.backward() call happens inside model_step, so we need to check before optimizer.step()
+            optimizers[args.model_name].step()
+            optimizers[args.model_name].zero_grad()
         if train:
             optimizers[args.model_name].step()
             optimizers[args.model_name].zero_grad()

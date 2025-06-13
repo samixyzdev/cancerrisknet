@@ -38,6 +38,9 @@ class DiseaseProgressionDataset(data.Dataset):
         self.metadata = metadata
         self.patients = []
         self.SETTINGS = load_data_settings(args)['SETTINGS']
+        
+        print(f"[DEBUG] Pancreatic cancer codes: {self.SETTINGS.PANC_CANCER_CODE}")
+        print(f"[DEBUG] Processing {len(metadata)} patients for split: {split_group}")
 
         for patient in tqdm.tqdm(metadata):
             patient_metadata = {patient: metadata[patient]}
@@ -65,6 +68,46 @@ class DiseaseProgressionDataset(data.Dataset):
 
         total_positive = sum([p['y'] for p in self.patients])
         print("Number of positive patients  in '{}' dataset is: {}.".format(self.split_group, total_positive))
+        
+        # 添加详细的调试信息
+        print(f"[DEBUG] Dataset '{self.split_group}' detailed analysis:")
+        print(f"  - Total patients processed: {len(self.patients)}")
+        print(f"  - Patients with future_panc_cancer=True: {sum(1 for p in self.patients if p['future_panc_cancer'])}")
+        print(f"  - Final positive labels (y=1): {total_positive}")
+
+        # 检查前几个患者的详细信息
+        print(f"[DEBUG] First 3 patients analysis:")
+        for i, p in enumerate(self.patients[:3]):
+            print(f"  Patient {i} (ID: {p['patient_id']}):")
+            print(f"    - future_panc_cancer: {p['future_panc_cancer']}")
+            print(f"    - y (final label): {p['y']}")
+            print(f"    - avai_indices: {len(p['avai_indices']) if p['avai_indices'] else 0} indices")
+    
+        # 检查这个患者的事件中是否有癌症代码
+        cancer_events = []
+        for event in p['events']:
+            if event['codes'] in self.SETTINGS.PANC_CANCER_CODE:
+                cancer_events.append(event['codes'])
+        print(f"    - Cancer events found: {cancer_events}")
+
+        # 如果有future_panc_cancer=True但y=0的患者，特别检查
+        problematic_patients = [p for p in self.patients if p['future_panc_cancer'] and p['y'] == 0]
+        if problematic_patients:
+            print(f"[DEBUG] Found {len(problematic_patients)} patients with future_panc_cancer=True but y=0")
+            print(f"[DEBUG] Checking first problematic patient:")
+            p = problematic_patients[0]
+            print(f"  - Patient ID: {p['patient_id']}")
+            print(f"  - Outcome date: {p['outcome_date']}")
+            print(f"  - Events count: {len(p['events'])}")
+        # 检查最后一个可用事件的日期
+        if p['avai_indices']:
+            last_idx = p['avai_indices'][-1]
+            last_event_date = p['events'][last_idx]['admit_date']
+            days_diff = (p['outcome_date'] - last_event_date).days
+            print(f"  - Last available event date: {last_event_date}")
+            print(f"  - Days from last event to outcome: {days_diff}")
+            print(f"  - Max time window (days): {max(self.args.month_endpoints) * 30}")
+        
         self.class_count()
 
     def process_events(self, events):

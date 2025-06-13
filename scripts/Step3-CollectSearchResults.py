@@ -279,7 +279,7 @@ if __name__ == "__main__":
             sorted_key_args = sorted(job_args.keys())
             args_dict.update({job: [job_args[k] for k in sorted_key_args]})
         print(SUCESSFUL_SEARCH_STR.format(summary_path))
-
+    sorted_key_args = sorted(list(next(iter(args_dict.values())).keys()))
     args_df = pd.DataFrame.from_dict(args_dict, orient='index', columns=sorted_key_args)
     print("[Step3-CollectSearchResults][3/3] Start exporting... ")
     exp = master_id
