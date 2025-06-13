@@ -1,0 +1,42 @@
+{
+  "search_space": {
+    "metadata": ["./data/patient_data.json"],
+    "data_setting_path": ["./data/settings_my_data.yaml"],
+
+    "train": [true],
+    "dev": [true],
+    "test": [true],
+
+    "epochs": [15],
+    "cuda": [true],
+    "num_workers": [4],
+
+    "model_name": ["transformer"],
+    "hidden_dim": [256],
+    "num_heads": [4],
+    "dropout": [0.1],
+
+    "optimizer": ["adam"],
+    "init_lr": [0.001],
+
+    "train_batch_size": [32],
+    "eval_batch_size": [32],
+    "max_batches_per_train_epoch": [-1],
+    "max_batches_per_dev_epoch": [-1],
+
+    "pad_size": [200],
+    "max_events_length": [1000],
+    "max_eval_indices": [10],
+
+    "eval_auroc": [true],
+    "eval_auprc": [true],
+    "eval_c_index": [true],
+    "tuning_metric": ["loss"],
+    
+    "use_known_risk_factors_only": [false]
+
+  },
+  "available_gpus": [0]
+}
+
+
