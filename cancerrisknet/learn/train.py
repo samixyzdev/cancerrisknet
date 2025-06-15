@@ -93,7 +93,6 @@ def train_model(train_data, dev_data, model, args):
 
     return epoch_stats, models
 
-
 def run_epoch(data_loader, train, truncate_epoch, models, optimizers, args):
     """
         Run model for one pass of data_loader, and return epoch statistics.
@@ -140,8 +139,9 @@ def run_epoch(data_loader, train, truncate_epoch, models, optimizers, args):
 
     if truncate_epoch:
         max_batches = args.max_batches_per_train_epoch if train else args.max_batches_per_dev_epoch
-        num_batches_per_epoch = min(len(data_loader), (max_batches))
-        logger.log("Truncate epoch @ batches: {}".format(num_batches_per_epoch))
+        if max_batches > 0:  # 只有在大于0时才截断
+            num_batches_per_epoch = min(len(data_loader), max_batches)
+    logger.log("Truncate epoch @ batches: {}".format(num_batches_per_epoch))
 
     i = 0
     tqdm_bar = tqdm(data_iter, total=num_batches_per_epoch)
@@ -156,35 +156,43 @@ def run_epoch(data_loader, train, truncate_epoch, models, optimizers, args):
         logger.newline()
         logger.log("prepare data")
 
+        # 执行模型前向传播
         step_results = model_step(batch, models, train, args)
-
         loss, batch_preds, batch_probs, batch_golds, batch_patient_golds, batch_exams, batch_pids, batch_censors, \
             batch_days_to_censor, batch_dates = step_results
-        batch_loss += loss.cpu().data.item()
+        
         logger.log("model step")
-        # Add this code in the run_epoch function, right after the model_step call
-        # and before the optimizer step (around line 168-170 in your code)
 
-        step_results = model_step(batch, models, train, args)
-
-        loss, batch_preds, batch_probs, batch_golds, batch_patient_golds, batch_exams, batch_pids, batch_censors, \
-        batch_days_to_censor, batch_dates = step_results
-
-        # ADD THIS NaN DETECTION CODE HERE:
+        # === NaN 检测和处理 ===
         if torch.isnan(loss):
-            print(f"[DEBUG] NaN loss detected at epoch {epoch}, batch {i}, skipping update.")
-        # Clear any gradients that might have been computed
-        if train and optimizers is not None:
-            optimizers[args.model_name].zero_grad()
+            print(f"[DEBUG] NaN loss detected at batch {i}, skipping update.")
+            # 清除可能计算的梯度
+            if train and optimizers is not None:
+                optimizers[args.model_name].zero_grad()
+            # 跳过这个batch，继续下一个
+            i += 1
+            tqdm_bar.update()
             continue
 
-        batch_loss += loss.cpu().data.item()
-        logger.log("model step")
-
+        # 检查梯度中的NaN（如果是训练模式）
         if train:
-        # The loss.backward() call happens inside model_step, so we need to check before optimizer.step()
-            optimizers[args.model_name].step()
-            optimizers[args.model_name].zero_grad()
+            has_nan_grad = False
+            for param in models[args.model_name].parameters():
+                if param.grad is not None and torch.isnan(param.grad).any():
+                    has_nan_grad = True
+                    break
+            
+            if has_nan_grad:
+                print(f"[DEBUG] NaN gradients detected at batch {i}, skipping update.")
+                optimizers[args.model_name].zero_grad()
+                # 跳过这个batch，继续下一个
+                i += 1
+                tqdm_bar.update()
+                continue
+
+        # 如果没有NaN问题，正常处理
+        batch_loss += loss.cpu().data.item()
+
         if train:
             optimizers[args.model_name].step()
             optimizers[args.model_name].zero_grad()
@@ -193,6 +201,7 @@ def run_epoch(data_loader, train, truncate_epoch, models, optimizers, args):
         losses.append(batch_loss)
         batch_loss = 0
 
+        # 保存结果
         preds.extend(batch_preds)
         probs.extend(batch_probs)
         golds.extend(batch_golds)
@@ -211,7 +220,8 @@ def run_epoch(data_loader, train, truncate_epoch, models, optimizers, args):
         logger.update()
         tqdm_bar.update()
 
-    avg_loss = np.mean(losses)
+    # 计算平均损失
+    avg_loss = np.mean(losses) if losses else 0.0
 
     return avg_loss, golds, patient_golds, preds, probs, exams, pids, censor_times, days_to_final_censors, dates
 

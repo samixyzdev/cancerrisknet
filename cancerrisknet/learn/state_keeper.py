@@ -1,3 +1,4 @@
+
 import pickle
 import os
 import torch
@@ -108,7 +109,8 @@ class StateKeeper:
             # Load model
             model_path = os.path.join(self.args.model_dir, MODEL_PATH.format(model_name, identifier))
             try:
-                models[model_name] = torch.load(model_path, map_location=self.args.device)
+                # 修复：添加 weights_only=False 参数
+                models[model_name] = torch.load(model_path, map_location=self.args.device, weights_only=False)
             except Exception:
                 raise Exception(
                     ERROR_MSG.format(model_path))
@@ -116,7 +118,8 @@ class StateKeeper:
             # Load optimizer state
             optimizer_path = os.path.join(self.args.model_dir, OPTIMIZER_PATH.format(model_name, identifier))
             try:
-                optimizer_states[model_name] = torch.load(optimizer_path, map_location=self.args.device)
+                # 修复：添加 weights_only=False 参数
+                optimizer_states[model_name] = torch.load(optimizer_path, map_location=self.args.device, weights_only=False)
             except Exception:
                 raise Exception(
                     ERROR_MSG.format(optimizer_path))

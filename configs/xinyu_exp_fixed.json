@@ -21,8 +21,8 @@
 
     "train_batch_size": [32],
     "eval_batch_size": [32],
-    "max_batches_per_train_epoch": [-1],
-    "max_batches_per_dev_epoch": [-1],
+    "max_batches_per_train_epoch": [1000],
+    "max_batches_per_dev_epoch": [100],
 
     "pad_size": [200],
     "max_events_length": [1000],
