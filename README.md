@@ -12,7 +12,7 @@ In the data folder you can find a synthetic data with the same structure of the 
 ```json
 {
     "PID_0":{
-        "birtdate":"1900-01-01",
+        "birthdate":"1900-01-01",
         "end_of_data":"2022-01-01",
         "events":[
             {
@@ -31,7 +31,7 @@ In the data folder you can find a synthetic data with the same structure of the 
 
     
     "PID_9999":{
-        "birtdate":"1900-01-01",
+        "birthdate":"1900-01-01",
         "end_of_data":"2022-01-01",
         "events":[
             {
